@@ -731,7 +731,7 @@ for i in pyOut.columns:
   plt.legend()
   plt.savefig(f'.\plots\plot_{MatlabOut[i].name}.png', dpi=300, bbox_inches='tight') # To save the plots in subfolder 'plots'
   # plt.show() # Uncomment this line to show the plots while running the script
-
+  plt.close() # To close current figure to avoid RAM consumption
 
 
 # ring test end
