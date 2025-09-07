@@ -682,7 +682,7 @@ for u in t[1:]:
     q_ch4 = 0
 
   flowtemp = {'q_gas' : q_gas, 'q_ch4' : q_ch4}
-  gasflow = gasflow.append(flowtemp, ignore_index=True)
+  gasflow = pd.concat([gasflow, pd.DataFrame([flowtemp])], ignore_index=True) # Old code: gasflow = gasflow.append(flowtemp, ignore_index=True)
 
   S_nh4_ion =  (S_IN - S_nh3)
   S_co2 =  (S_IC - S_hco3_ion)
@@ -693,7 +693,7 @@ for u in t[1:]:
   state_zero = [S_su, S_aa, S_fa, S_va, S_bu, S_pro, S_ac, S_h2, S_ch4, S_IC, S_IN, S_I, X_xc, X_ch, X_pr, X_li, X_su, X_aa, X_fa, X_c4, X_pro, X_ac, X_h2, X_I, S_cation, S_anion, S_H_ion, S_va_ion, S_bu_ion, S_pro_ion, S_ac_ion, S_hco3_ion, S_co2, S_nh3, S_nh4_ion, S_gas_h2, S_gas_ch4, S_gas_co2]
   
   dfstate_zero = pd.DataFrame([state_zero], columns = columns)
-  simulate_results = simulate_results.append(dfstate_zero)
+  simulate_results = pd.concat([simulate_results, dfstate_zero], ignore_index=True) # Old code: simulate_results = simulate_results.append(dfstate_zero)
   t0 = u
       
 
@@ -702,35 +702,37 @@ phlogarray = -1 * np.log10(simulate_results['pH'])
 simulate_results['pH'] = phlogarray
 simulate_results.to_csv("dynamic_out.csv", index = False)
 
-## ring test begin
-# to compare the resutls with the dynamic simulation data from the BSM2 Matlab implementation
-# pyOut = pd.read_csv("dynamic_out.csv")
-# pyIn = pd.read_csv("digester_influent.csv")
-# MatlabOut = pd.read_csv("Matlabout_dyn.csv")
+# ring test begin
+# to compare the results with the dynamic simulation data from the BSM2 Matlab implementation
+pyOut = pd.read_csv("dynamic_out.csv")
+pyIn = pd.read_csv("digester_influent.csv")
+MatlabOut = pd.read_csv("Matlabout_dyn.csv")
 
-# pyOut.time = pyIn.time
-# pyOut.Q = pyIn.Q
-# MatlabOut.Q = pyOut.Q
-# mvalue = pvalue = 0
-# ringtest = pd.DataFrame(columns=["state", "Matlab", "Python", "error"])
+pyOut['time'] = pyIn['time'] # Code not recommended: pyOut.time = pyIn.time
+pyOut['Q'] = pyIn['Q'] # Code not recommended: pyOut.Q = pyIn.Q
+MatlabOut['Q'] = pyOut['Q'] # Code not recommended: MatlabOut.Q = pyOut.Q
+mvalue = pvalue = 0
+ringtest = pd.DataFrame(columns=["state", "Matlab", "Python", "error"])
 
-# n = 0
-# for i in pyOut.columns:
-#   Matlabinteg = integrate.trapz(MatlabOut[i] , MatlabOut.time)
-#   pyinteg = integrate.trapz(pyOut[i] , pyOut.time)
-#   results =pd.DataFrame([[MatlabOut[i].name, Matlabinteg/280, pyinteg/280, abs(pyinteg-Matlabinteg)/280]], columns=["state", "Matlab", "Python", "error"])
-#   ringtest = ringtest.append(results)
-#   print("Matlab " + MatlabOut[i].name + " average = " + str(Matlabinteg/280) + " Python " +  pyOut[i].name + " average = " + str(pyinteg/280) + " Error =" + str(abs(pyinteg-Matlabinteg)/280))
+n = 0
+for i in pyOut.columns:
+  Matlabinteg = integrate.trapezoid(MatlabOut[i] , MatlabOut.time) # Old code: Matlabinteg = integrate.trapz(MatlabOut[i] , MatlabOut.time)
+  pyinteg = integrate.trapezoid(pyOut[i] , pyOut.time) #Old code: pyinteg = integrate.trapz(pyOut[i] , pyOut.time)
+  results =pd.DataFrame([[MatlabOut[i].name, Matlabinteg/280, pyinteg/280, abs(pyinteg-Matlabinteg)/280]], columns=["state", "Matlab", "Python", "error"])
+  ringtest = pd.concat([ringtest, results], ignore_index=True) # Old code: ringtest = ringtest.append(results)
+  print("Matlab " + MatlabOut[i].name + " average = " + str(Matlabinteg/280) + " Python " +  pyOut[i].name + " average = " + str(pyinteg/280) + " Error =" + str(abs(pyinteg-Matlabinteg)/280))
   
-# ringtest.to_csv("ringtest.csv", index = False)
+ringtest.to_csv("ringtest.csv", index = False)
+
+for i in pyOut.columns:
+  plt.figure(figsize=(32, 8))
+  plt.plot(MatlabOut.time, MatlabOut[i], label = f"{MatlabOut[i].name} Matlab Out", linestyle="-", color = "red")
+  plt.plot(pyOut.time, pyOut[i], label = f"{pyOut[i].name} Python Out", linestyle="--", color = "blue")
+  plt.legend()
+  plt.savefig(f'.\plots\plot_{MatlabOut[i].name}.png', dpi=300, bbox_inches='tight') # To save the plots in subfolder 'plots'
+  # plt.show() # Uncomment this line to show the plots while running the script
 
 
-# for i in pyOut.columns:
-#   plt.figure(figsize=(32, 8))
-#   plt.plot(MatlabOut.time, MatlabOut[i], label = MatlabOut[i].name, linestyle="-", color = "red")
-#   plt.plot(pyOut.time, pyOut[i], label = pyOut[i].name, linestyle="--", color = "blue")
-#   plt.legend()
-#   plt.show()
 
-## ring test end
+# ring test end
 
